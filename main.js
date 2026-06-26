@@ -73,18 +73,35 @@ animate()
 
 let handLandmarker = undefined
 const createHandLandmarker = async () => {
-    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm")
-    handLandmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
-            delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numHands: 1,
-        minHandDetectionConfidence: 0.7,
-        minHandPresenceConfidence: 0.7
-    })
-    console.log(handLandmarker);
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
+    
+    const baseOptions = {
+        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`
+    };
+
+    try {
+        // Attempt with GPU first
+        handLandmarker = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: { ...baseOptions, delegate: "GPU" },
+            runningMode: "VIDEO",
+            numHands: 1,
+            minHandDetectionConfidence: 0.7,
+            minHandPresenceConfidence: 0.7
+        });
+        console.log("Initialized with GPU");
+    } catch (gpuError) {
+        console.warn("GPU initialization failed, falling back to CPU:", gpuError);
+        
+        // Fallback to CPU
+        handLandmarker = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: { ...baseOptions, delegate: "CPU" },
+            runningMode: "VIDEO",
+            numHands: 1,
+            minHandDetectionConfidence: 0.7,
+            minHandPresenceConfidence: 0.7
+        });
+        console.log("Initialized with CPU");
+    }
 }
 createHandLandmarker()
 
